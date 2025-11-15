@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semester Survivor Simulator</title>
+    <!-- We will use the 'Inter' font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+    
+    <!-- All styling is inside this <style> tag -->
+    <style>
+        /* Base setup */
+        :root {
+            --color-bg: #1a1a1a;
+            --color-terminal: #0c0c0c;
+            --color-text: #f0f0f0;
+            --color-border: #555;
+            --color-prompt: #4CAF50;
+            --color-prompt-hover: #45a049;
+            
+            /* ANSI Colors */
+            --color-red: #FF6B6B;
+            --color-green: #69F0AE;
+            --color-yellow: #FEEA00;
+            --color-blue: #82AAFF;
+            --color-magenta: #F781FF;
+            --color-cyan: #00E0E0;
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            /* Use a "terminal-like" font */
+            font-family: 'Fira Code', 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 800px;
+            border: 1px solid var(--color-border);
+            background-color: var(--color-terminal);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        h1, h2 {
+            text-align: center;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px dashed var(--color-border);
+            margin: 24px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Player Name Input */
+        #player-name-prompt {
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Inter', sans-serif;
+        }
+        #player-name-input {
+            background-color: #333;
+            color: #eee;
+            border: 1px solid #777;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1em;
+        }
+        #start-game-btn {
+            background-color: var(--color-prompt);
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1em;
+            margin-left: 10px;
+            transition: background-color 0.2s;
+        }
+        #start-game-btn:hover {
+            background-color: var(--color-prompt-hover);
+        }
+
+        /* ANSI Color Classes */
+        .bold { font-weight: bold; }
+        .red { color: var(--color-red); }
+        .green { color: var(--color-green); }
+        .yellow { color: var(--color-yellow); }
+        .blue { color: var(--color-blue); }
+        .magenta { color: var(--color-magenta); }
+        .cyan { color: var(--color-cyan); }
+
+        /* Map Display */
+        #map-display {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            white-space: pre-wrap; /* Preserves formatting */
+        }
+
+        /* Stats Display */
+        #stats-display {
+            margin-bottom: 20px;
+            font-family: 'Inter', sans-serif;
+        }
+        .stat-container {
+            margin-bottom: 8px;
+        }
+        .stat-bar-outer {
+            background-color: #444;
+            border-radius: 6px;
+            height: 22px;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid #666;
+        }
+        .stat-bar-inner {
+            height: 100%;
+            border-radius: 6px 0 0 6px;
+            transition: width 0.5s ease-in-out;
+            /* Add a subtle gradient */
+            background-image: linear-gradient(to right, rgba(255,255,255,0.3), rgba(255,255,255,0.05));
+        }
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .stat-name {
+            font-weight: bold;
+        }
+        /* Stat Bar Colors */
+        .stat-bar-inner.energy { background-color: var(--color-red); }
+        .stat-bar-inner.academics { background-color: var(--color-blue); }
+        .stat-bar-inner.sports { background-color: var(--color-yellow); }
+        .stat-bar-inner.social { background-color: var(--color-green); }
+
+        /* Event Display */
+        #event-title {
+            margin-bottom: 15px;
+        }
+        #event-description, #narration-display, #final-evaluation {
+            min-height: 1.6em; /* Reserve space */
+        }
+        
+        /* This is the blinking cursor for the typewriter effect */
+        .typing-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--color-text);
+            margin-left: 2px;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Choice Buttons */
+        #choices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .choice-button {
+            background-color: #3a3a3a;
+            color: #f0f0f0;
+            border: 1px solid #777;
+            padding: 12px;
+            width: 100%;
+            text-align: left;
+            font-family: 'Fira Code', monospace;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .choice-button:not(:disabled):hover {
+            background-color: #555;
+            border-color: #999;
+        }
+        .choice-button:disabled {
+            background-color: #222;
+            color: #777;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        /* Narration & Final Result */
+        #narration-display {
+            margin-top: 20px;
+            font-style: italic;
+        }
+        #final-result p {
+            font-size: 1.2em;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- This is the main container for the game -->
+    <div id="game-container">
+        
+        <!-- Welcome Title -->
+        <h1 id="welcome-title" class="bold"></h1>
+
+        <!-- Player Name Prompt (Visible at start) -->
+        <div id="player-name-prompt">
+            <label for="player-name-input">Enter your player name: </label>
+            <input type="text" id="player-name-input" placeholder="RUET ECE Hero">
+            <button id="start-game-btn">Start Game</button>
+        </div>
+
+        <!-- Main Game Content (Hidden at start) -->
+        <div id="game-content" class="hidden">
+            <div id="map-display" class="bold"></div>
+            <div id="stats-display"></div>
+            
+            <hr>
+            
+            <h2 id="event-title" class="cyan"></h2>
+            <!-- The typewriter effect will happen inside these P tags -->
+            <p id="event-description"></p>
+            <div id="choices-container"></div>
+            <p id="narration-display" class="magenta"></p>
+            
+            <hr>
+            
+            <!-- Final Results (Hidden until end) -->
+            <div id="final-result" class="hidden">
+                <h2 class="bold">========== FINAL RESULTS ==========</h2>
+                <div id="final-stats"></div>
+                <p id="final-cgpa" class="bold"></p>
+                <p id="final-life" class="bold"></p>
+                <p id="final-evaluation" class="green bold"></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- All game logic is inside this <script> tag -->
+    <script>
+        // Wait for the page to load
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- DOM Element References ---
+            const welcomeTitle = document.getElementById('welcome-title');
+            const playerNameInput = document.getElementById('player-name-input');
+            const startGameBtn = document.getElementById('start-game-btn');
+            const playerNamePrompt = document.getElementById('player-name-prompt');
+            const gameContent = document.getElementById('game-content');
+            
+            const mapDisplay = document.getElementById('map-display');
+            const statsDisplay = document.getElementById('stats-display');
+            const eventTitle = document.getElementById('event-title');
+            const eventDescription = document.getElementById('event-description');
+            const choicesContainer = document.getElementById('choices-container');
+            const narrationDisplay = document.getElementById('narration-display');
+            
+            const finalResultDisplay = document.getElementById('final-result');
+            const finalStats = document.getElementById('final-stats');
+            const finalCgpa = document.getElementById('final-cgpa');
+            const finalLife = document.getElementById('final-life');
+            const finalEvaluation = document.getElementById('final-evaluation');
+
+            // --- Player Class (Ported from C++) ---
+            // Includes the fix to prevent stats from going to 0
+            class Player {
+                constructor(name) {
+                    this.name = name || "RUET ECE Hero";
+                    this.energy = 100;
+                    this.academics = 50;
+                    this.sports = 30;
+                    this.social = 40;
+                    this.MIN_STAT = 10; // The "floor" you requested
+                    this.MAX_STAT = 100;
+                }
+
+                // Method to update stats, with clamping
+                updateStats(e, a, s, so) {
+                    this.energy = Math.min(Math.max(this.energy + e, this.MIN_STAT), this.MAX_STAT);
+                    this.academics = Math.min(Math.max(this.academics + a, this.MIN_STAT), this.MAX_STAT);
+                    this.sports = Math.min(Math.max(this.sports + s, this.MIN_STAT), this.MAX_STAT);
+                    this.social = Math.min(Math.max(this.social + so, this.MIN_STAT), this.MAX_STAT);
+                }
+
+                // Getters
+                getStats() {
+                    return {
+                        name: this.name,
+                        energy: this.energy,
+                        academics: this.academics,
+                        sports: this.sports,
+                        social: this.social
+                    };
+                }
+            }
+
+            // --- Game State ---
+            let player;
+            let currentEventIndex = 0;
+            let isAnimating = false; // Prevents clicking while text is typing
+            const mapEvents = ["[Social]", "[Friday]", "[Assignment]", "[CT]", "[Sports]", "[Lab]", "[Final]"];
+
+            // --- Game Events Data (Using the final balanced C++ logic) ---
+            const gameEvents = [
+                {
+                    title: "========== SOCIAL EVENT ==========",
+                    description: `<span class="green">You are entering your life with a fresh start...</span><br><span class="bold">Welcome to RUET!</span><br><span class="magenta">Your journey begins here, and it's time to explore!</span>`,
+                    choices: [
+                        { text: `1) Stay in your room (<span class="red">Social -15</span>) 🛏️`, stats: { e: 0, a: 0, s: 0, so: -15 }, narration: `[Warning] Good luck....Spending 4 years alone...introvert👊 🛏️` },
+                        { text: `2) Try to socialize (<span class="green">Social +20, Energy -5</span>) 🤝`, stats: { e: -5, a: 0, s: 0, so: 20 }, narration: `[Hint] You may have made a connection that might be legendary! 🤝` }
+                    ]
+                },
+                {
+                    title: "========== FRIDAY NIGHT ==========",
+                    description: `<span class="yellow">It's Friday night. How would you spend your night?</span>`,
+                    choices: [
+                        { text: `1) Sleep early (+15 Energy, +10 Academics, -5 Social) 😴`, stats: { e: 15, a: 10, s: 0, so: -5 }, narration: `[Narration] Night passes... You wonder why you are here, but you have reached your class on time⏱️ 😴` },
+                        { text: `2) Movie marathon (+20 Energy, -15 Academics) 🍿🎬`, stats: { e: 20, a: -15, s: 0, so: 0 }, narration: `[Narration] Well the movie was nice, but you overslept... No attendance for you today, lol! 🍿` },
+                        { text: `3) Play Ludo/cards (<span class="red">-20 Energy, -10 Academics</span>, <span class="green">+25 Social</span>) 🎲🃏`, stats: { e: -20, a: -10, s: 0, so: 25 }, narration: `[Narration] Ludo is boring, but you made connections... No attendance for you today, lol! 🎲` }
+                    ]
+                },
+                {
+                    title: "========== CODING ASSIGNMENT ==========",
+                    description: `<span class="bold">Chapter 3: CSE Lab Report !</span>`,
+                    choices: [
+                        { text: `1) Do all the code yourself (+25 Academics, -20 Energy) ✏️📚`, stats: { e: -20, a: 25, s: 0, so: 0 }, narration: `[Narration] Assignment completed... barely alive. ✏️` },
+                        { text: `2) Copy from Chatgpt (-10 Academics, +10 Social) 🖥️`, stats: { e: 0, a: -10, s: 0, so: 10 }, narration: `[Narration] People might leave you, but ChatGpt won't. 🖥️` },
+                        { text: `3) Take someone else's .md file (<span class="red">-5 Academics</span>, <span class="green">+5 Social</span>) 🤝`, stats: { e: 0, a: -5, s: 0, so: 5 }, narration: `[Narration] You owe a burger to your friend. 🤝` }
+                    ]
+                },
+                {
+                    title: "========== CLASS TEST ==========",
+                    description: `<span class="yellow">It's time for a surprise class test! 📝</span>`,
+                    choices: [
+                        { text: `1) Study all night (+30 Academics, -25 Energy) 🌙`, stats: { e: -25, a: 30, s: 0, so: 0 }, narration: `[Narration] Test is done. Anxiety level: 100% 🌙` },
+                        { text: `2) Sleep and guess (+0 Academics, <span class="green">+15 Energy, +5 Social</span>) 😴`, stats: { e: 15, a: 0, s: 0, so: 5 }, narration: `[Narration] You managed to catch some sleep during the test. Good luck! on your journey of being a panda🐼 😴` },
+                        { text: `3) Copy from friend (-10 Academics, +10 Social) 🤝`, stats: { e: 0, a: -10, s: 0, so: 10 }, narration: `[Narration] You owe a burger to your friend. 🤝` }
+                    ]
+                },
+                {
+                    title: "========== SPORTS EVENT ==========",
+                    description: `<span class="green">Time to show your physical skills! 🏃‍♂️⚽</span>`,
+                    choices: [
+                        { text: `1) Participate actively (+20 Sports, -15 Energy) 💪`, stats: { e: -15, a: 0, s: 20, so: 0 }, narration: `[Narration] Sports day ends....You are one step closer to becoming Messi! 💪` },
+                        { text: `2) Watch others (+0 Sports, -5 Energy) 👀`, stats: { e: -5, a: 0, s: 0, so: 0 }, narration: `[Narration] Well well!!!We have got a professional stalker here... 👀` }
+                    ]
+                },
+                {
+                    title: "========== LAB SESSION ==========",
+                    description: `<span class="blue">Lab experiments ahead! 🔬</span>`,
+                    choices: [
+                        { text: `1) Solve and submit 3+ Codeforce problems (+15 Academics, -10 Energy) 🧪`, stats: { e: -10, a: 15, s: 0, so: 0 }, narration: `[Narration] You might have a future at Google 🧪` },
+                        { text: `2) Don't solve any Codeforces problems (-5 Academics, +5 Energy) ⚠️`, stats: { e: 5, a: -5, s: 0, so: 0 }, narration: `[Narration] Skipped all Codeforces problems. What were even you doing? ⚠️` }
+                    ]
+                },
+                {
+                    title: "========== FINAL EXAM ==========",
+                    description: `<span class="red">This is it! The final exam! 😱📚</span>`,
+                    choices: [
+                        { text: `1) Study hard (+40 Academics, -30 Energy) 📖`, stats: { e: -30, a: 40, s: 0, so: 0 }, narration: `[Narration] Exam over. Wait for results... 📖` },
+                        { text: `2) Revise lightly (+20 Academics, -10 Energy) ✏️`, stats: { e: -10, a: 20, s: 0, so: 0 }, narration: `[Narration] Exam over. Wait for results... ✏️` },
+                        { text: `3) Panic and guess (-10 Academics, -15 Energy) 😵`, stats: { e: -15, a: -10, s: 0, so: 0 }, narration: `[Narration] Exam over. Wait for results... 😵` }
+                    ]
+                }
+            ];
+
+            // --- Animation Functions (Ported from C++) ---
+
+            /**
+             * A helper function to "sleep" for a given time
+             * @param {number} ms - Milliseconds to wait
+             */
+            function wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            /**
+             * Replicates the C++ animateText typewriter effect.
+             * This function is complex because it handles nested HTML tags for colors.
+             * @param {HTMLElement} element - The HTML element to type into.
+             * @param {string} htmlString - The string to type (can contain HTML).
+             * @param {number} delay - The delay between characters (default 40ms).
+             */
+            async function animateText(element, htmlString, delay = 40) {
+                isAnimating = true;
+                element.innerHTML = ''; // Clear the element first
+                
+                // Add the typing cursor
+                const cursor = document.createElement('span');
+                cursor.className = 'typing-cursor';
+                element.appendChild(cursor);
+
+                // We use a temporary in-memory element to parse the HTML string
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlString;
+
+                // This recursive function walks the DOM nodes (text and elements)
+                async function typeNode(node, targetElement) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        // If it's plain text, type it char by char
+                        for (const char of node.textContent) {
+                            cursor.before(document.createTextNode(char));
+                            await wait(delay);
+                        }
+                    } else if (node.nodeType === Node.ELEMENT_NODE) {
+                        // If it's an element (like <span class="red">)
+                        const newElement = document.createElement(node.nodeName);
+                        // Copy attributes (like class="red")
+                        for (const attr of node.attributes) {
+                            newElement.setAttribute(attr.name, attr.value);
+                        }
+                        
+                        // Add the new element to the display
+                        cursor.before(newElement);
+                        
+                        // Recursively type the children of this element
+                        for (const child of Array.from(node.childNodes)) {
+                            await typeNode(child, newElement);
+                        }
+                    }
+                }
+
+                // Start the typing process
+                for (const child of Array.from(tempDiv.childNodes)) {
+                    await typeNode(child, element);
+                }
+
+                // Remove the cursor when done
+                cursor.remove();
+                isAnimating = false;
+            }
+
+            /**
+             * Replicates the C++ bounceEmoji effect.
+             * @param {HTMLElement} element - The element to bounce the emoji in.
+             * @param {string} emoji - The emoji to bounce.
+             * @param {number} bounces - Number of bounces.
+             * @param {number} delay - Delay for each bounce.
+             */
+            async function bounceEmoji(element, emoji, bounces = 3, delay = 200) {
+                if (!emoji) return; // Do nothing if no emoji
+                
+                isAnimating = true;
+                const emojiSpan = document.createElement('span');
+                emojiSpan.textContent = ` ${emoji}`; // Add a space
+                
+                // We'll append it, then "bounce" it (remove/add)
+                for (let i = 0; i < bounces; i++) {
+                    element.appendChild(emojiSpan);
+                    await wait(delay);
+                    emojiSpan.remove();
+                    await wait(delay);
+                }
+                
+                // Add it one last time
+                element.appendChild(emojiSpan);
+                isAnimating = false;
+            }
+
+            // --- Game Logic Functions ---
+
+            /** Kicks off the game after name entry */
+            async function startGame() {
+                const playerName = playerNameInput.value;
+                player = new Player(playerName);
+                
+                playerNamePrompt.classList.add('hidden');
+                gameContent.classList.remove('hidden');
+                
+                updateStatsDisplay();
+                await displayEvent(currentEventIndex);
+            }
+
+            /** Renders the current event */
+            async function displayEvent(index) {
+                if (isAnimating) return; // Don't proceed if already animating
+                
+                const event = gameEvents[index];
+                
+                updateMapDisplay(index);
+                
+                eventTitle.innerHTML = event.title;
+                narrationDisplay.innerHTML = ""; // Clear old narration
+                choicesContainer.innerHTML = ""; // Clear old buttons
+
+                // Type out the event description
+                await animateText(eventDescription, event.description);
+
+                // Create a button for each choice *after* animation
+                event.choices.forEach(choice => {
+                    const button = document.createElement('button');
+                    button.innerHTML = choice.text; // HTML is parsed
+                    button.className = 'choice-button';
+                    // Use 'async' here to allow animations inside
+                    button.onclick = async () => {
+                        if (isAnimating) return; // Prevent clicking during animation
+                        await selectChoice(choice);
+                    };
+                    choicesContainer.appendChild(button);
+                });
+            }
+
+            /** Handles the user's choice */
+            async function selectChoice(choice) {
+                // Apply stat changes
+                const s = choice.stats;
+                player.updateStats(s.e, s.a, s.s, s.so);
+                
+                // Update UI
+                updateStatsDisplay();
+                
+                // Disable buttons
+                document.querySelectorAll('.choice-button').forEach(btn => btn.disabled = true);
+                
+                // Clear old event text
+                eventDescription.innerHTML = "";
+
+                // Extract emoji from narration (e.g., "Hello 😴")
+                const emojiMatch = choice.narration.match(/(\s[^\s\w]{1,2})$/);
+                let narrationText = choice.narration;
+                let emoji = null;
+                
+                if (emojiMatch) {
+                    emoji = emojiMatch[1].trim();
+                    // Remove emoji from the text so it can be typed
+                    narrationText = narrationText.substring(0, narrationText.length - emoji.length - 1);
+                }
+
+                // Type out the narration
+                await animateText(narrationDisplay, narrationText);
+                
+                // Bounce the emoji (if one exists)
+                await bounceEmoji(narrationDisplay, emoji);
+                
+                // Wait 1.5 seconds, then advance
+                await wait(1500); 
+                
+                currentEventIndex++;
+                if (currentEventIndex < gameEvents.length) {
+                    await displayEvent(currentEventIndex);
+                } else {
+                    await endGame();
+                }
+            }
+
+            /** Updates the "Semester Journey" map */
+            function updateMapDisplay(currentIndex) {
+                let mapHtml = "--- Semester Journey ---\n";
+                mapHtml += mapEvents.map((event, index) => {
+                    if (index < currentIndex) return `<span class="green">${event}</span>`;
+                    if (index === currentIndex) return `<span class="yellow">${event}</span>`;
+                    return `<span class="red">${event}</span>`;
+                }).join(" -> ");
+                mapHtml += " -> END";
+                mapDisplay.innerHTML = mapHtml;
+            }
+
+            /** Updates all the player's stat bars */
+            function updateStatsDisplay() {
+                statsDisplay.innerHTML = ""; // Clear old stats
+                const stats = player.getStats();
+                
+                statsDisplay.innerHTML += `<h3>--- ${stats.name} Stats ---</h3>`;
+                statsDisplay.innerHTML += createStatBar("Energy", stats.energy, 100, "energy");
+                statsDisplay.innerHTML += createStatBar("Academics", stats.academics, 100, "academics");
+                statsDisplay.innerHTML += createStatBar("Sports", stats.sports, 100, "sports");
+                statsDisplay.innerHTML += createStatBar("Social", stats.social, 100, "social");
+            }
+
+            /** Helper function to generate HTML for a stat bar */
+            function createStatBar(name, value, max, colorClass) {
+                const percentage = (value / max) * 100;
+                return `
+                    <div class="stat-container">
+                        <div class="stat-label">
+                            <span class="stat-name bold">${name}</span>
+                            <span>${value}/${max}</span>
+                        </div>
+                        <div class="stat-bar-outer">
+                            <div class="stat-bar-inner ${colorClass}" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            /** Displays the final game results */
+            async function endGame() {
+                // Hide game event UI
+                eventTitle.classList.add('hidden');
+                eventDescription.classList.add('hidden');
+                choicesContainer.classList.add('hidden');
+                mapDisplay.classList.add('hidden');
+                narrationDisplay.innerHTML = "The semester has ended!";
+                
+                // Calculate final scores (with 2.00 CGPA floor)
+                const stats = player.getStats();
+                let cgpa = 2.00; // The "floor" you requested
+                if (stats.academics >= 80) cgpa = 4.00;
+                else if (stats.academics >= 75) cgpa = 3.75;
+                else if (stats.academics >= 70) cgpa = 3.50;
+                else if (stats.academics >= 65) cgpa = 3.25;
+                else if (stats.academics >= 60) cgpa = 3.00;
+                else if (stats.academics >= 50) cgpa = 2.75;
+                else if (stats.academics >= 40) cgpa = 2.50;
+                
+                let life = (stats.energy + stats.sports + stats.social) / 3.0;
+                life = Math.max(life, 10.0); // Minimum life of 10
+                life = Math.min(life, 100.0).toFixed(2); // Format to 2 decimal places
+                
+                // Determine final evaluation
+                let evaluation = "";
+                if (cgpa >= 3.5 && life >= 65) {
+                    evaluation = `<span class="green">Wow! A perfect blend of brain and life skills. You're basically Superman!</span>`;
+                } else if (cgpa >= 3.5 && life >= 50 && life < 60) {
+                    evaluation = `<span class="yellow">Bookworm alert! 📚 You’re acing exams but forgetting there’s a whole world outside your notes. Balance, my friend!</span>`;
+                } else if (cgpa >= 3.75 && life < 60) {
+                    evaluation = `<span class="red">"~~I went to the woods because I wanted to live deliberately. I wanted to live deep and suck the marrow out of life! To put to rest all that was not life, and not when I came to die, discover I had not lived at all.~." +"<br>- Dead Poet Society.</span>`;
+                } else if (cgpa < 2.8 && life >= 70) {
+                    evaluation = `<span class="cyan">You Party animal🎉... You should have chosen BBA, lol. Maybe pick up a book sometimes?</span>`;
+                } else {
+                    evaluation = `<span class="magenta">What are you even doing here? Get a life!</span>`;
+                }
+                
+                // Display final results
+                finalStats.innerHTML = statsDisplay.innerHTML; // Show the final stat bars
+                finalCgpa.innerHTML = `CGPA: ${cgpa.toFixed(2)} <span style="font-weight:normal; font-family:'Inter', sans-serif;">(based on Academics)</span>`;
+                finalLife.innerHTML = `Life: ${life}/100 <span style="font-weight:normal; font-family:'Inter', sans-serif;">(avg of Energy, Sports, Social)</span>`;
+                
+                finalResultDisplay.classList.remove('hidden');
+
+                // Animate the final evaluation text
+                await animateText(finalEvaluation, evaluation);
+            }
+
+            // --- Start Button Event Listener ---
+            startGameBtn.onclick = startGame;
+            
+            // Allow pressing Enter to start
+            playerNameInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    startGame();
+                }
+            });
+
+            // Start the welcome title animation on load
+            animateText(welcomeTitle, "Welcome to Semester Survivor Simulator!");
+        });
+    </script>
+</body>
+</html>
