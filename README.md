@@ -3,6 +3,8 @@
 # 🎮 Semester Survivor Simulator
 
 **Can you survive the semester without burning out?**
+<img width="875" height="1366" alt="image" src="https://github.com/user-attachments/assets/cb50954e-05c0-484c-9263-b0d4d38ceb71" />
+
 
 A terminal-themed, text-based browser game where you balance Academics, Energy, Social life, and Sports to make it through the semester alive.
 
